@@ -1,0 +1,59 @@
+name: Desplegar en GitHub Pages
+
+# Este archivo configura la automatización para publicar el proyecto en GitHub Pages
+# cada vez que se sube un cambio a la rama principal (main)
+
+on:
+  push:
+    branches: ["main"]
+
+  # Permite ejecutar el despliegue manualmente desde la pestaña Actions en GitHub
+  workflow_dispatch:
+
+# Permisos requeridos para publicar en GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Permite una sola ejecución a la vez para evitar conflictos
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      # Paso 1: Descarga el código del repositorio
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      # Paso 2: Configura el entorno de Node.js
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      # Paso 3: Instala las librerías del proyecto
+      - name: Instalar dependencias
+        run: npm install
+
+      # Paso 4: Compila el proyecto React con Vite creando la carpeta dist/
+      - name: Compilar proyecto
+        run: npm run build
+
+      # Paso 5: Prepara la carpeta dist para ser publicada
+      - name: Subir artefacto de Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist'
+
+      # Paso 6: Publica la página en GitHub Pages
+      - name: Desplegar a GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
